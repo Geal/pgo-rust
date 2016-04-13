@@ -6,7 +6,7 @@ Prerequisites:
 
 * LLVM 3.8
 * The rustc version used here: `rustc 1.7.0-dev (80e21d195 2016-01-17)`
-* on OS X, LLVM installed from Homebrew misses the file `/usr/local/Cellar/llvm38/3.8.0/lib/llvm-3.8/bin/../lib/clang/3.8.0/lib/darwin/libclang_rt.profile_osx.a`. You can find it in `/Library/Developer/CommandLineTools/usr/lib/clang/7.0.2/lib/darwin/libclang_rt.profile_osx.a` (this might cause issues, but I'm not knowledgeable enough about LLVM to see them)
+* on OS X, LLVM installed from Homebrew misses the file `/usr/local/Cellar/llvm38/3.8.0/lib/llvm-3.8/bin/../lib/clang/3.8.0/lib/darwin/libclang_rt.profile_osx.a`. In theory, doing `brew install homebrew/versions/llvm38 --with-asan` will build it, but it failed for me. As an alternative, you can download the compiler-rt source from [compiler-rt.llvm.org](http://compiler-rt.llvm.org/) and build it (the file you need will be in `lib/darwin` once compiled).
 
 The basic idea is to generate the LLVM bitcode file from Rust, then apply the profiling tools there, then compile manually.
 
@@ -36,20 +36,38 @@ $ ./pgo 200000
 -0.169083713
 ```
 
-The `.profraw` file must be transformed to the `.profdata` format. This is the step that fails currently:
+The `.profraw` file must be transformed to the `.profdata` format.
 
 ```
 $ llvm-profdata-3.8 merge -output=pgo.profdata default.profraw
-error: default.profraw: Unsupported instrumentation profile format version
 ```
 
-Is this related to the `libclang_rt.profile_osx.a` file?
+We can now use that file in the compilation steps:
 
-## Remaining steps
+```
+opt-3.8 -pgo-instr-use -pgo-test-profile-file=pgo.profdata target/debug/pgo.bc -o pgo-opt.bc
+llc-3.8 -filetype=obj pgo-opt.bc
+clang -fprofile-instr-use=pgo.profdata pgo-opt.o -L/usr/local/lib/rustlib/x86_64-apple-darwin/lib -lstd-ca1c970e -o pgo-opt
+```
 
-I am not sure about those, I cannot test them without the `.profdata` file
+Comparing the two versions:
+
 ```
-opt-3.8 -pgo-instr-use -pgo-test-profile-file=pgo.profdata target/debug/pgo.bc -o pgo.bc
-llc-3.8 -filetype=obj pgo.bc
-clang -fprofile-instr-use=pgo.profdata pgo.o -L/usr/local/lib/rustlib/x86_64-apple-darwin/lib -lstd-ca1c970e -o pgo
+$ time ./target/debug/pgo 6000000
+-0.169075164
+-0.169059681
+
+real    0m23.110s
+user    0m22.997s
+sys     0m0.055s
+
+$ time ./pgo-opt 6000000
+-0.169075164
+-0.169059681
+
+real    0m18.491s
+user    0m18.419s
+sys     0m0.035s
 ```
+
+This is just a small (hackish) test, but there may be big benefits in testing PGO for Rust code!
