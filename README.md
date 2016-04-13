@@ -62,7 +62,8 @@ $ time ./target/release/pgo 1000000000
 real    1m22.528s
 user    1m22.214s
 sys     0m0.173s
-MacBook-de-Geo:pgo geal$ time ./pgo-opt 1000000000
+
+$ time ./pgo-opt 1000000000
 -0.169075164
 -0.169051540
 
