@@ -1,5 +1,7 @@
 # Testing LLVM's profile guided optimization with Rust
 
+see https://github.com/rust-lang/rfcs/issues/1220
+
 The code tested is from https://benchmarksgame.alioth.debian.org/u64q/program.php?test=nbody&lang=rust&id=2
 
 Prerequisites:
@@ -12,26 +14,26 @@ The basic idea is to generate the LLVM bitcode file from Rust, then apply the pr
 
 Firsy, we create the `target/debug/pgo.bc` file.
 ```
-cargo rustc  -- --emit llvm-bc
+cargo rustc --release -- --emit llvm-bc
 ```
 
 Then we generate the `pgo.bc` file in the current directory, with instrumentation.
 
 ```
-opt-3.8 -pgo-instr-gen -instrprof target/debug/pgo.bc -o pgo.bc
+opt-3.8 -O2 -pgo-instr-gen -instrprof target/release/pgo.bc -o pgo.bc
 ```
 
 Then we compile it using `llc` and `clang`. I linked to the libstd corresponding to my version.
 
 ```
-llc-3.8 -filetype=obj pgo.bc
-clang-3.8 -fprofile-instr-generate pgo.o -L/usr/local/lib/rustlib/x86_64-apple-darwin/lib -lstd-ca1c970e -o pgo
+llc-3.8 -O2 -filetype=obj pgo.bc
+clang-3.8 -O2 -flto -fprofile-instr-generate pgo.o -L/usr/local/lib/rustlib/x86_64-apple-darwin/lib -lstd-ca1c970e -o pgo
 ```
 
 After running the pgo executable, the `default.profraw` file is created:
 
 ```
-$ ./pgo 200000
+$ ./pgo 10000000
 -0.169075164
 -0.169083713
 ```
@@ -45,29 +47,28 @@ $ llvm-profdata-3.8 merge -output=pgo.profdata default.profraw
 We can now use that file in the compilation steps:
 
 ```
-opt-3.8 -pgo-instr-use -pgo-test-profile-file=pgo.profdata target/debug/pgo.bc -o pgo-opt.bc
-llc-3.8 -filetype=obj pgo-opt.bc
-clang -fprofile-instr-use=pgo.profdata pgo-opt.o -L/usr/local/lib/rustlib/x86_64-apple-darwin/lib -lstd-ca1c970e -o pgo-opt
+opt-3.8 -O2 -pgo-instr-use -pgo-test-profile-file=pgo.profdata target/release/pgo.bc -o pgo-opt.bc
+llc-3.8 -O2 -filetype=obj pgo-opt.bc
+clang-3.8 -O2 -flto -fprofile-instr-use=pgo.profdata pgo-opt.o -L/usr/local/lib/rustlib/x86_64-apple-darwin/lib -lstd-ca1c970e -o pgo-opt
 ```
 
 Comparing the two versions:
 
 ```
-$ time ./target/debug/pgo 6000000
+$ time ./target/release/pgo 1000000000
 -0.169075164
--0.169059681
+-0.169051540
 
-real    0m23.110s
-user    0m22.997s
-sys     0m0.055s
-
-$ time ./pgo-opt 6000000
+real    1m22.528s
+user    1m22.214s
+sys     0m0.173s
+MacBook-de-Geo:pgo geal$ time ./pgo-opt 1000000000
 -0.169075164
--0.169059681
+-0.169051540
 
-real    0m18.491s
-user    0m18.419s
-sys     0m0.035s
+real    1m9.810s
+user    1m9.687s
+sys     0m0.070s
 ```
 
 This is just a small (hackish) test, but there may be big benefits in testing PGO for Rust code!
