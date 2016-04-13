@@ -71,4 +71,13 @@ user    1m9.687s
 sys     0m0.070s
 ```
 
+Generating assembly for comparison:
+
+```
+llc-3.8 -O2 -filetype=asm target/release/pgo.bc
+llc-3.8 -O2 -filetype=asm pgo-opt.bc
+```
+
+Will generate `target/release/pgo.s` and `pgo-opt.s`.
+
 This is just a small (hackish) test, but there may be big benefits in testing PGO for Rust code!
