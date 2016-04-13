@@ -80,5 +80,6 @@ llc-3.8 -O2 -filetype=asm pgo-opt.bc
 ```
 
 Will generate `target/release/pgo.s` and `pgo-opt.s`.
+You can find those files in the `assembly/` directory.
 
 This is just a small (hackish) test, but there may be big benefits in testing PGO for Rust code!
