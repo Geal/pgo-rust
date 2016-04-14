@@ -1,3 +1,8 @@
+// The Computer Language Benchmarks Game
+// http://benchmarksgame.alioth.debian.org/
+//
+// contributed by Cristi Cobzarenco
+
 use std::ops::{Add, Sub, Mul};
 
 const PI: f64 = 3.141592653589793;
