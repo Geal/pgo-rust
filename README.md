@@ -52,9 +52,18 @@ llc-3.8 -O2 -filetype=obj pgo-opt.bc
 clang-3.8 -O2 -flto -fprofile-instr-use=pgo.profdata pgo-opt.o -L/usr/local/lib/rustlib/x86_64-apple-darwin/lib -lstd-ca1c970e -o pgo-opt
 ```
 
-Comparing the two versions:
+Comparing the two versions, and one build directly with rustc:
 
 ```
+$ rustc -O src/main.rs
+$ time ./main 1000000000
+-0.169075164
+-0.169051540
+
+real    2m19.395s
+user    2m18.954s
+sys     0m0.240s
+
 $ time ./target/release/pgo 1000000000
 -0.169075164
 -0.169051540
