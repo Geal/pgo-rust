@@ -12,7 +12,7 @@ Prerequisites:
 
 The basic idea is to generate the LLVM bitcode file from Rust, then apply the profiling tools there, then compile manually.
 
-Firsy, we create the `target/debug/pgo.bc` file.
+First, we create the `target/debug/pgo.bc` file.
 ```
 cargo rustc --release -- --emit llvm-bc
 ```
