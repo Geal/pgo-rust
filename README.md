@@ -1,6 +1,6 @@
 # Testing LLVM's profile guided optimization with Rust
 
-There's a blogpost describing why I tested this: https://unhandledexpression.com/2016/04/14/using-llvm-pgo-in-rust/
+There's a blogpost describing why I tested this: https://unhandledexpression.com/development/general/rust/2016/04/14/using-llvm-pgo-in-rust.html
 
 see the issue on PGO in Rust: https://github.com/rust-lang/rfcs/issues/1220
 
